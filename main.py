@@ -24,18 +24,36 @@ LINE = (
 )
 
 MAX_CHARS = 200
+MAX_WORDS = 25
 
 
 def validate(line: str) -> None:
     """The gate's own rules, checked before anything is written."""
     if not line or not line.strip():
         raise ValueError("entry must not be empty or only whitespace")
+    if line != line.strip():
+        raise ValueError("entry must not start or end with whitespace")
     if "\n" in line or "\r" in line:
         raise ValueError("entry must be a single line")
+    if any(ord(ch) < 32 for ch in line):
+        raise ValueError("entry must not contain control characters")
+    if "  " in line:
+        raise ValueError("entry must not contain double spaces")
     if len(line) > MAX_CHARS:
         raise ValueError(
             f"entry is {len(line)} characters, over the {MAX_CHARS} limit"
         )
+    words = line.split()
+    if len(words) > MAX_WORDS:
+        raise ValueError(
+            f"entry is {len(words)} words, over the {MAX_WORDS} limit"
+        )
+    # One sentence: a single terminal mark (. ! ?), allowing a closing quote.
+    stripped = line.rstrip("'\"")
+    if not stripped or stripped[-1] not in ".!?":
+        raise ValueError("entry must end with a single sentence terminator")
+    if sum(ch in ".!?" for ch in stripped[:-1]) > 0:
+        raise ValueError("entry must be exactly one sentence")
 
 
 def output_path() -> str:
@@ -62,7 +80,7 @@ def main() -> None:
         written = handle.read()
     if written != LINE:
         raise ValueError("read-back mismatch: entry.txt is not the line")
-    print(f"entry: {len(LINE)} characters")
+    print(f"entry: {len(LINE)} characters, {len(LINE.split())} words")
     print(written)
 
 
